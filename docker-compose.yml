@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:13
+    container_name: starter-template-postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"  # Expose Postgres on port 5432
+    networks:
+      - app_network
+
+  redis:
+    image: 'redis:alpine'
+    container_name: starter-template-redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - 'redis_data:/data'
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app_network:
