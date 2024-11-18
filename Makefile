@@ -5,13 +5,14 @@ endif
 
 # Variables
 DOCKER_COMPOSE_FILE = docker-compose.yml
+GO_SERVER_ENTRY = cmd/web/app/main.go
 YELLOW  = \033[33m
 CYAN    = \033[36m
 GREEN   = \033[32m
 RESET   = \033[0m
 
 # Default target: show help message
-.PHONY: help up down logs clean
+.PHONY: help up down logs clean server-start tests
 
 help:
 	@echo ""
@@ -19,10 +20,12 @@ help:
 	@echo ""
 	@echo "${GREEN}Available targets:${RESET}"
 	@echo ""
-	@echo "  ${YELLOW}up${RESET}      - Start the application containers in detached mode"
-	@echo "  ${YELLOW}down${RESET}    - Stop the application containers and remove the network"
-	@echo "  ${YELLOW}logs${RESET}    - View logs of the running containers in real-time"
-	@echo "  ${YELLOW}clean${RESET}   - Stop the containers and remove volumes and orphan containers"
+	@echo "  ${YELLOW}up${RESET}           - Start the application containers in detached mode"
+	@echo "  ${YELLOW}down${RESET}         - Stop the application containers and remove the network"
+	@echo "  ${YELLOW}logs${RESET}         - View logs of the running containers in real-time"
+	@echo "  ${YELLOW}clean${RESET}        - Stop the containers and remove volumes and orphan containers"
+	@echo "  ${YELLOW}server-start${RESET} - Start the Go server locally"
+	@echo "  ${YELLOW}tests${RESET}        - Run all tests for the Go project"
 	@echo ""
 	@echo "${CYAN}Example: make up${RESET}"
 	@echo ""
@@ -47,9 +50,14 @@ clean:
 	@echo "${CYAN}Cleaning up containers, volumes, and networks...${RESET}"
 	docker compose -f $(DOCKER_COMPOSE_FILE) down --volumes --remove-orphans
 
-# execute tests
+# Execute tests
 tests:
-	@echo "${CYAN} Running tests... ${RESET}"
+	@echo "${CYAN}Running tests...${RESET}"
 	@go test ./... \
 	&& echo "${GREEN}Success: All tests passed!${RESET}" \
 	|| echo "${RED}Error: Some tests failed.${RESET}"
+
+# Start the Go server
+start:
+	@echo "${CYAN}Starting the Go server...${RESET}"
+	go run $(GO_SERVER_ENTRY)

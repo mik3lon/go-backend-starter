@@ -7,8 +7,10 @@ import (
 	user_domain "github.com/mik3lon/starter-template/internal/app/module/user/domain"
 	user_infrastructure "github.com/mik3lon/starter-template/internal/app/module/user/infrastructure"
 	user_ui "github.com/mik3lon/starter-template/internal/app/module/user/ui"
+	"github.com/mik3lon/starter-template/pkg/auth"
 	"github.com/mik3lon/starter-template/pkg/config"
 	"net/http"
+	"os"
 )
 
 const (
@@ -23,7 +25,10 @@ type UserModule struct {
 
 	GetUserList *user_ui.GetUserListHandler
 
-	UserRepository user_domain.UserRepository
+	UserRepository            user_domain.UserRepository
+	GoogleSocialSignInHandler *user_ui.GoogleSocialSignInHandler
+
+	IdTokenValidator user_domain.IdTokenValidator
 }
 
 func (m *UserModule) Name() string {
@@ -43,13 +48,21 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 	}
 
 	um := &UserModule{
-		UserRepository:         r,
-		UserSignInIndexHandler: user_ui.HandleUserSocialSignInIndex,
-		UserDashboardHandler:   user_ui.NewUserDashboardHandler(k.JsonResponseWriter),
-		GetUserList:            user_ui.NewGetUserListHandler(k.QueryBus, k.JsonResponseWriter),
+		UserRepository:            r,
+		UserSignInIndexHandler:    user_ui.HandleUserSocialSignInIndex,
+		UserDashboardHandler:      user_ui.NewUserDashboardHandler(k.JsonResponseWriter),
+		GetUserList:               user_ui.NewGetUserListHandler(k.QueryBus, k.JsonResponseWriter),
+		GoogleSocialSignInHandler: user_ui.NewGoogleSocialSignInHandler(k.QueryBus, k.JsonResponseWriter),
+		IdTokenValidator:          user_infrastructure.NewGoogleIDTokenValidator(cnf.GoogleClientId),
 	}
 
+	privateKeyPEM := os.Getenv("USER_PRIVATE_PEM_FILE")
+	privateKeyPassword := os.Getenv("USER_PRIVATE_PEM_PASSWORD")
+	publicKeyPEM := os.Getenv("USER_PUBLIC_PEM_FILE")
+	ue := auth.NewJWTUserEncoder(privateKeyPEM, privateKeyPassword, publicKeyPEM)
+	
 	um.AddCommand(&user_application.CreateUserCommand{}, user_application.NewCreateUserCommandHandler(r))
+	um.AddQuery(&user_application.GoogleSignInQuery{}, user_application.NewGoogleSignInQueryHandler(r, um.IdTokenValidator, ue))
 	um.AddQuery(&user_application.FindUserQuery{}, user_application.NewFindUserQueryHandler(r))
 	um.AddQuery(&user_application.ListUsersQuery{}, user_application.NewListUsersQueryHandler(r))
 
@@ -57,6 +70,12 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 }
 
 func (m *UserModule) RegisterRoutes(c *Kernel) {
+
+	c.Router.WithMiddleware().Handle(
+		http.MethodPost,
+		"/users/social/signin/google",
+		m.GoogleSocialSignInHandler.HandleGoogleSocialSignIn,
+	)
 
 	c.Router.WithMiddleware().Handle(
 		http.MethodGet,
