@@ -1,0 +1,32 @@
+name: Go Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21  # Replace with your project's Go version
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: go mod tidy
+
+      # Step 4: Run tests
+      - name: Run tests
+        run: go test ./... -v
