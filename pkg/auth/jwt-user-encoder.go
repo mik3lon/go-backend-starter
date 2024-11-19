@@ -90,7 +90,7 @@ func (jue *JWTUserEncoder) GenerateToken(user *user_domain.User) (*user_domain.T
 
 	// Create and return TokenDetails
 	tokenDetails := &user_domain.TokenDetails{
-		UserId:              user.Email,
+		UserEmail:           user.Email,
 		AccessToken:         signedAccessToken,
 		RefreshToken:        signedRefreshToken,
 		AccessTokenExpires:  accessTokenExpiration,

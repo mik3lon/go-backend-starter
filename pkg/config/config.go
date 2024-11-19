@@ -30,6 +30,21 @@ func LoadConfig() *Config {
 	}
 }
 
+// LoadTestConfig loads environment variables from a .env file and populates the Config struct.
+func LoadTestConfig() *Config {
+	// Load the .env file
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	return &Config{
+		AddressPort:    getEnv("ADDRESS_PORT", ":8081"),                                      // Default to :8081 if not set
+		DatabaseDSN:    getEnv("DATABASE_DSN", "postgres://user:password@localhost:5432/db"), // Default DSN
+		GoogleClientId: getEnv("GOOGLE_CLIENT_ID", ""),
+	}
+}
+
 // getEnv gets an environment variable or returns a default value if not set.
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {

@@ -33,7 +33,7 @@ func NewGoogleSignInQueryHandler(
 func (cuch GoogleSignInQueryHandler) Handle(ctx context.Context, c bus.Dto) (interface{}, error) {
 	cuc, ok := c.(*GoogleSignInQuery)
 	if !ok {
-		return nil, errors.New("invalid command")
+		return nil, errors.New("invalid query")
 	}
 
 	idTokenClaims, err := cuch.tv.Validate(ctx, cuc.IdToken)
@@ -41,27 +41,34 @@ func (cuch GoogleSignInQueryHandler) Handle(ctx context.Context, c bus.Dto) (int
 		return nil, err
 	}
 
-	password, err := user_domain.GenerateHashedPassword(true, "")
-	if err != nil {
-		return nil, errors.New("failed to generate hashed password")
-	}
+	user, err := cuch.r.FindByEmail(ctx, idTokenClaims.Email)
+	switch {
+	case err == nil:
+	case errors.As(err, new(*user_domain.UserNotFound)):
+		// User not found, create a new one
+		password, genErr := user_domain.GenerateHashedPassword(true, "")
+		if genErr != nil {
+			return nil, errors.New("failed to generate hashed password")
+		}
 
-	user := user_domain.CreateUser(
-		uuid.NewString(),
-		idTokenClaims.Username,
-		idTokenClaims.Email,
-		password,
-		idTokenClaims.Name,
-		idTokenClaims.Surname,
-		"ROL_USER",
-		idTokenClaims.ProfilePictureUrl,
-	)
+		user = user_domain.CreateUser(
+			uuid.NewString(),
+			idTokenClaims.Username,
+			idTokenClaims.Email,
+			password,
+			idTokenClaims.Name,
+			idTokenClaims.Surname,
+			"ROL_USER",
+			idTokenClaims.ProfilePictureUrl,
+		)
 
-	err = cuch.r.Save(ctx, user)
-	switch err.(type) {
-	case nil, *user_domain.UserAlreadyExists:
-		return cuch.ue.GenerateToken(user)
+		saveErr := cuch.r.Save(ctx, user)
+		if saveErr != nil {
+			return nil, saveErr
+		}
 	default:
 		return nil, err
 	}
+
+	return cuch.ue.GenerateToken(user)
 }

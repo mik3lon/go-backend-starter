@@ -54,7 +54,7 @@ func (r *PostgresUserRepository) FindByEmail(ctx context.Context, email string) 
 	result := r.DB.First(&user, "email = ?", email)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, user_domain.ErrUserNotFound
+		return nil, user_domain.NewUserNotFound(email)
 	}
 	return user, result.Error
 }
