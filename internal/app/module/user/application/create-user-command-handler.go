@@ -24,11 +24,15 @@ func (c CreateUserCommand) Id() string {
 }
 
 type CreateUserCommandHandler struct {
-	r user_domain.UserRepository
+	r  user_domain.UserRepository
+	pe user_domain.PasswordEncrypter
 }
 
-func NewCreateUserCommandHandler(r user_domain.UserRepository) *CreateUserCommandHandler {
-	return &CreateUserCommandHandler{r: r}
+func NewCreateUserCommandHandler(
+	r user_domain.UserRepository,
+	pe user_domain.PasswordEncrypter,
+) *CreateUserCommandHandler {
+	return &CreateUserCommandHandler{r: r, pe: pe}
 }
 
 func (cuch CreateUserCommandHandler) Handle(ctx context.Context, c bus.Dto) error {
@@ -37,7 +41,7 @@ func (cuch CreateUserCommandHandler) Handle(ctx context.Context, c bus.Dto) erro
 		return errors.New("invalid command")
 	}
 
-	password, err := user_domain.GenerateHashedPassword(cuc.IsFormSocialAuth, cuc.PlainPassword)
+	password, err := cuch.pe.GenerateHashedPassword(cuc.IsFormSocialAuth, cuc.PlainPassword)
 	if err != nil {
 		return errors.New("failed to generate hashed password")
 	}

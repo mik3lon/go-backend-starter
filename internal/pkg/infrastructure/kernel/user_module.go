@@ -27,6 +27,8 @@ type UserModule struct {
 
 	UserRepository            user_domain.UserRepository
 	GoogleSocialSignInHandler *user_ui.GoogleSocialSignInHandler
+	UserPasswordSignInHandler *user_ui.UserPasswordSignInHandler
+	UserPasswordSignUpHandler *user_ui.UserPasswordSignUpHandler
 
 	IdTokenValidator user_domain.IdTokenValidator
 }
@@ -54,17 +56,23 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 		GetUserList:               user_ui.NewGetUserListHandler(k.QueryBus, k.JsonResponseWriter),
 		GoogleSocialSignInHandler: user_ui.NewGoogleSocialSignInHandler(k.QueryBus, k.JsonResponseWriter),
 		IdTokenValidator:          user_infrastructure.NewGoogleIDTokenValidator(cnf.GoogleClientId),
+		UserPasswordSignInHandler: user_ui.NewUserPasswordSignInHandler(k.QueryBus, k.JsonResponseWriter),
+		UserPasswordSignUpHandler: user_ui.NewUserPasswordSignUpHandler(k.CommandBus, k.JsonResponseWriter),
 	}
 
 	privateKeyPEM := os.Getenv("USER_PRIVATE_PEM_FILE")
 	privateKeyPassword := os.Getenv("USER_PRIVATE_PEM_PASSWORD")
 	publicKeyPEM := os.Getenv("USER_PUBLIC_PEM_FILE")
 	ue := auth.NewJWTUserEncoder(privateKeyPEM, privateKeyPassword, publicKeyPEM)
-	
-	um.AddCommand(&user_application.CreateUserCommand{}, user_application.NewCreateUserCommandHandler(r))
-	um.AddQuery(&user_application.GoogleSignInQuery{}, user_application.NewGoogleSignInQueryHandler(r, um.IdTokenValidator, ue))
+
+	pe := user_infrastructure.NewBcryptPasswordEncrypter()
+
+	um.AddCommand(&user_application.CreateUserCommand{}, user_application.NewCreateUserCommandHandler(r, pe))
+
+	um.AddQuery(&user_application.GoogleSignInQuery{}, user_application.NewGoogleSignInQueryHandler(r, um.IdTokenValidator, ue, pe))
 	um.AddQuery(&user_application.FindUserQuery{}, user_application.NewFindUserQueryHandler(r))
 	um.AddQuery(&user_application.ListUsersQuery{}, user_application.NewListUsersQueryHandler(r))
+	um.AddQuery(&user_application.UserPasswordSignInQuery{}, user_application.NewUserPasswordSignInQueryHandler(r, ue, pe))
 
 	return um
 }
@@ -75,6 +83,18 @@ func (m *UserModule) RegisterRoutes(c *Kernel) {
 		http.MethodPost,
 		"/users/social/signin/google",
 		m.GoogleSocialSignInHandler.HandleGoogleSocialSignIn,
+	)
+
+	c.Router.WithMiddleware().Handle(
+		http.MethodPost,
+		"/users/auth/signin",
+		m.UserPasswordSignInHandler.HandleUserPasswordSignIn,
+	)
+
+	c.Router.WithMiddleware().Handle(
+		http.MethodPost,
+		"/users/auth/signup",
+		m.UserPasswordSignUpHandler.HandleUserPasswordSignUp,
 	)
 
 	c.Router.WithMiddleware().Handle(

@@ -52,3 +52,17 @@ func (m *MockUserEncoder) GenerateToken(user *user_domain.User) (*user_domain.To
 	args := m.Called(user)
 	return args.Get(0).(*user_domain.TokenDetails), args.Error(1)
 }
+
+type MockPasswordEncrypter struct {
+	mock.Mock
+}
+
+func (m *MockPasswordEncrypter) GenerateHashedPassword(isSocial bool, plainPassword string) (string, error) {
+	args := m.Called(isSocial, plainPassword)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockPasswordEncrypter) VerifyPassword(hashedPassword, password string) error {
+	args := m.Called(hashedPassword, password)
+	return args.Error(0)
+}

@@ -13,21 +13,23 @@ type GoogleSignInQuery struct {
 }
 
 func (c GoogleSignInQuery) Id() string {
-	return "create-user-command"
+	return "google-sign-in-query"
 }
 
 type GoogleSignInQueryHandler struct {
 	r  user_domain.UserRepository
 	tv user_domain.IdTokenValidator
 	ue user_domain.UserEncoder
+	pe user_domain.PasswordEncrypter
 }
 
 func NewGoogleSignInQueryHandler(
 	r user_domain.UserRepository,
 	tv user_domain.IdTokenValidator,
 	ue user_domain.UserEncoder,
+	pe user_domain.PasswordEncrypter,
 ) *GoogleSignInQueryHandler {
-	return &GoogleSignInQueryHandler{r: r, tv: tv, ue: ue}
+	return &GoogleSignInQueryHandler{r: r, tv: tv, ue: ue, pe: pe}
 }
 
 func (cuch GoogleSignInQueryHandler) Handle(ctx context.Context, c bus.Dto) (interface{}, error) {
@@ -46,7 +48,7 @@ func (cuch GoogleSignInQueryHandler) Handle(ctx context.Context, c bus.Dto) (int
 	case err == nil:
 	case errors.As(err, new(*user_domain.UserNotFound)):
 		// User not found, create a new one
-		password, genErr := user_domain.GenerateHashedPassword(true, "")
+		password, genErr := cuch.pe.GenerateHashedPassword(true, "")
 		if genErr != nil {
 			return nil, errors.New("failed to generate hashed password")
 		}

@@ -19,8 +19,9 @@ func TestGoogleSignInQueryHandler_UserFoundSuccessfully(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockValidator := new(MockIdTokenValidator)
 	mockEncoder := new(MockUserEncoder)
+	passwordEncrypter := new(MockPasswordEncrypter)
 
-	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder)
+	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder, passwordEncrypter)
 
 	idToken := "test-id-token"
 	email := "test@example.com"
@@ -41,6 +42,7 @@ func TestGoogleSignInQueryHandler_UserFoundSuccessfully(t *testing.T) {
 
 	mockValidator.On("Validate", ctx, idToken).Return(claims, nil)
 	mockRepo.On("FindByEmail", ctx, email).Return(user, nil)
+	passwordEncrypter.On("GenerateHashedPassword", true, "").Return("encryptedPassword", nil)
 	mockEncoder.On("GenerateToken", user).Return(expectedToken, nil)
 
 	// Act
@@ -61,8 +63,9 @@ func TestGoogleSignInQueryHandler_UserNotFound_CreatesNewUser(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockValidator := new(MockIdTokenValidator)
 	mockEncoder := new(MockUserEncoder)
+	passwordEncrypter := new(MockPasswordEncrypter)
 
-	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder)
+	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder, passwordEncrypter)
 
 	idToken := "test-id-token"
 	email := "test@example.com"
@@ -87,6 +90,7 @@ func TestGoogleSignInQueryHandler_UserNotFound_CreatesNewUser(t *testing.T) {
 	}
 
 	mockValidator.On("Validate", ctx, idToken).Return(claims, nil)
+	passwordEncrypter.On("GenerateHashedPassword", true, "").Return("encryptedPassword", nil)
 	mockRepo.On("FindByEmail", ctx, email).Return(nil, userNotFoundErr)
 	mockRepo.On("Save", ctx, mock.MatchedBy(func(arg interface{}) bool {
 		user, ok := arg.(*user_domain.User)
@@ -118,8 +122,9 @@ func TestGoogleSignInQueryHandler_InvalidQuery(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockValidator := new(MockIdTokenValidator)
 	mockEncoder := new(MockUserEncoder)
+	passwordEncrypter := new(MockPasswordEncrypter)
 
-	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder)
+	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder, passwordEncrypter)
 
 	// Act
 	result, err := handler.Handle(ctx, nil)
@@ -137,8 +142,9 @@ func TestGoogleSignInQueryHandler_TokenValidationFailed(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockValidator := new(MockIdTokenValidator)
 	mockEncoder := new(MockUserEncoder)
+	passwordEncrypter := new(MockPasswordEncrypter)
 
-	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder)
+	handler := user_application.NewGoogleSignInQueryHandler(mockRepo, mockValidator, mockEncoder, passwordEncrypter)
 
 	idToken := "test-id-token"
 	mockValidator.On("Validate", ctx, idToken).Return(nil, errors.New("invalid token"))
