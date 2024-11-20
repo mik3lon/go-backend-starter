@@ -26,7 +26,7 @@ type GoogleUserInfo struct {
 
 func NewGinRouter() *GinRouter {
 	gob.Register(user_domain.User{})
-	engine := gin.New()
+	engine := gin.Default()
 
 	return &GinRouter{
 		engine: engine,
