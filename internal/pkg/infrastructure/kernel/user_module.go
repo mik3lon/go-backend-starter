@@ -9,12 +9,13 @@ import (
 	user_ui "github.com/mik3lon/starter-template/internal/app/module/user/ui"
 	"github.com/mik3lon/starter-template/pkg/auth"
 	"github.com/mik3lon/starter-template/pkg/config"
+	"github.com/mik3lon/starter-template/pkg/http/middleware"
 	"net/http"
-	"os"
 )
 
 const (
 	GetUserList = "/users"
+	GetUserMe   = "/users/me"
 )
 
 type UserModule struct {
@@ -31,6 +32,9 @@ type UserModule struct {
 	UserPasswordSignUpHandler *user_ui.UserPasswordSignUpHandler
 
 	IdTokenValidator user_domain.IdTokenValidator
+	GetUserMeHandler *user_ui.GetUserMeHandler
+	UserEncoder      user_domain.UserEncoder
+	AuthMiddleware   *middleware.AuthMiddleware
 }
 
 func (m *UserModule) Name() string {
@@ -49,8 +53,12 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 		panic("error connecting with the database")
 	}
 
+	ue := auth.NewJWTUserEncoder(cnf.PrivateKeyPEM, cnf.PrivateKeyPassword, cnf.PublicKeyPEM)
+
 	um := &UserModule{
 		UserRepository:            r,
+		UserEncoder:               ue,
+		AuthMiddleware:            middleware.NewAuthMiddleware(r, ue),
 		UserSignInIndexHandler:    user_ui.HandleUserSocialSignInIndex,
 		UserDashboardHandler:      user_ui.NewUserDashboardHandler(k.JsonResponseWriter),
 		GetUserList:               user_ui.NewGetUserListHandler(k.QueryBus, k.JsonResponseWriter),
@@ -58,12 +66,8 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 		IdTokenValidator:          user_infrastructure.NewGoogleIDTokenValidator(cnf.GoogleClientId),
 		UserPasswordSignInHandler: user_ui.NewUserPasswordSignInHandler(k.QueryBus, k.JsonResponseWriter),
 		UserPasswordSignUpHandler: user_ui.NewUserPasswordSignUpHandler(k.CommandBus, k.JsonResponseWriter),
+		GetUserMeHandler:          user_ui.NewGetUserMeHandler(k.QueryBus, k.JsonResponseWriter),
 	}
-
-	privateKeyPEM := os.Getenv("USER_PRIVATE_PEM_FILE")
-	privateKeyPassword := os.Getenv("USER_PRIVATE_PEM_PASSWORD")
-	publicKeyPEM := os.Getenv("USER_PUBLIC_PEM_FILE")
-	ue := auth.NewJWTUserEncoder(privateKeyPEM, privateKeyPassword, publicKeyPEM)
 
 	pe := user_infrastructure.NewBcryptPasswordEncrypter()
 
@@ -78,20 +82,19 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 }
 
 func (m *UserModule) RegisterRoutes(c *Kernel) {
-
-	c.Router.WithMiddleware().Handle(
+	c.Router.Handle(
 		http.MethodPost,
 		"/users/social/signin/google",
 		m.GoogleSocialSignInHandler.HandleGoogleSocialSignIn,
 	)
 
-	c.Router.WithMiddleware().Handle(
+	c.Router.Handle(
 		http.MethodPost,
 		"/users/auth/signin",
 		m.UserPasswordSignInHandler.HandleUserPasswordSignIn,
 	)
 
-	c.Router.WithMiddleware().Handle(
+	c.Router.Handle(
 		http.MethodPost,
 		"/users/auth/signup",
 		m.UserPasswordSignUpHandler.HandleUserPasswordSignUp,
@@ -99,13 +102,13 @@ func (m *UserModule) RegisterRoutes(c *Kernel) {
 
 	c.Router.WithMiddleware().Handle(
 		http.MethodGet,
-		"/dashboard",
-		m.UserDashboardHandler.HandleUserDashboard,
-	)
-
-	c.Router.WithMiddleware().Handle(
-		http.MethodGet,
 		GetUserList,
 		m.GetUserList.HandleGetUserList,
+	)
+
+	c.Router.WithMiddleware(m.AuthMiddleware.Check).Handle(
+		http.MethodGet,
+		GetUserMe,
+		m.GetUserMeHandler.HandleGetUserMe,
 	)
 }

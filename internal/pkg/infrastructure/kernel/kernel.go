@@ -6,6 +6,7 @@ import (
 	"github.com/mik3lon/starter-template/pkg/bus/command"
 	"github.com/mik3lon/starter-template/pkg/bus/query"
 	"github.com/mik3lon/starter-template/pkg/config"
+	"github.com/mik3lon/starter-template/pkg/http/middleware"
 	"github.com/mik3lon/starter-template/pkg/router"
 	"github.com/rs/zerolog"
 	"net/http"
@@ -19,6 +20,8 @@ type Kernel struct {
 	CommandBus         *command.CommandBus
 	QueryBus           *query.QueryBus
 	JsonResponseWriter *http_response.JsonResponseWriter
+
+	AuthMiddleware *middleware.AuthMiddleware
 }
 
 // Init initializes the container with a router implementation.

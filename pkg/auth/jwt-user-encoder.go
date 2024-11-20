@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	user_domain "github.com/mik3lon/starter-template/internal/app/module/user/domain"
+	"strings"
 	"time"
 )
 
@@ -17,12 +18,15 @@ type JWTUserEncoder struct {
 }
 
 func NewJWTUserEncoder(privateKey string, password string, publicKey string) *JWTUserEncoder {
-	return &JWTUserEncoder{privateKeyPEM: privateKey, privateKeyPassword: password, publicKeyPEM: publicKey}
+	return &JWTUserEncoder{
+		privateKeyPEM:      strings.Replace(privateKey, `\n`, "\n", 100),
+		privateKeyPassword: password,
+		publicKeyPEM:       strings.Replace(publicKey, `\n`, "\n", 100),
+	}
 }
 
 // loadPrivateKey loads an RSA private key from a PEM file with an optional privateKeyPassword
 func loadPrivateKey(pemFile, password string) (*rsa.PrivateKey, error) {
-	// Decode the PEM block
 	signBytes := []byte(pemFile)
 
 	if password != "" {

@@ -8,9 +8,6 @@ import (
 	"testing"
 )
 
-var defaultHeaders = map[string]string{
-	"Content-Type": "application/vnd.api+json",
-}
 var routerHandler http.Handler
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

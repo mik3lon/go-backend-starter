@@ -1,6 +1,7 @@
 package user_ui
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	user_application "github.com/mik3lon/starter-template/internal/app/module/user/application"
 	http_response "github.com/mik3lon/starter-template/internal/pkg/infrastructure/http/response"
@@ -37,6 +38,7 @@ func (gss *GoogleSocialSignInHandler) HandleGoogleSocialSignIn(g *gin.Context) {
 	case nil:
 		gss.jw.WriteResponse(g.Writer, userToken, http.StatusOK)
 	default:
+		fmt.Printf("error %v", err)
 		g.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 

@@ -29,5 +29,10 @@ func (fuqh FindUserQueryHandler) Handle(ctx context.Context, query bus.Dto) (int
 		return nil, errors.New("invalid query")
 	}
 
-	return fuqh.r.FindByEmail(ctx, q.Email)
+	user, err := fuqh.r.FindByEmail(ctx, q.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFindUserResponseFromUser(user), nil
 }

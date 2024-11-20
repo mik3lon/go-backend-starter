@@ -12,7 +12,10 @@ type Config struct {
 	AddressPort string
 	DatabaseDSN string
 
-	GoogleClientId string
+	GoogleClientId     string
+	PrivateKeyPEM      string
+	PrivateKeyPassword string
+	PublicKeyPEM       string
 }
 
 // LoadConfig loads environment variables from a .env file and populates the Config struct.
@@ -24,9 +27,12 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		AddressPort:    getEnv("ADDRESS_PORT", ":8081"),                                      // Default to :8081 if not set
-		DatabaseDSN:    getEnv("DATABASE_DSN", "postgres://user:password@localhost:5432/db"), // Default DSN
-		GoogleClientId: getEnv("GOOGLE_CLIENT_ID", ""),
+		AddressPort:        getEnv("ADDRESS_PORT", ":8081"),                                      // Default to :8081 if not set
+		DatabaseDSN:        getEnv("DATABASE_DSN", "postgres://user:password@localhost:5432/db"), // Default DSN
+		GoogleClientId:     getEnv("GOOGLE_CLIENT_ID", ""),
+		PrivateKeyPEM:      getEnv("USER_PRIVATE_PEM_FILE", ""),
+		PrivateKeyPassword: getEnv("USER_PRIVATE_PEM_PASSWORD", ""),
+		PublicKeyPEM:       getEnv("USER_PUBLIC_PEM_FILE", ""),
 	}
 }
 
