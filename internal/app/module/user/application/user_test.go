@@ -2,6 +2,7 @@ package user_application_test
 
 import (
 	"context"
+	"github.com/golang-jwt/jwt"
 	user_domain "github.com/mik3lon/starter-template/internal/app/module/user/domain"
 	"github.com/stretchr/testify/mock"
 )
@@ -46,6 +47,11 @@ func (m *MockIdTokenValidator) Validate(ctx context.Context, idToken string) (*u
 
 type MockUserEncoder struct {
 	mock.Mock
+}
+
+func (m *MockUserEncoder) DecryptToken(tokenString string) (jwt.Claims, error) {
+	args := m.Called(tokenString)
+	return args.Get(0).(jwt.Claims), args.Error(1)
 }
 
 func (m *MockUserEncoder) GenerateToken(user *user_domain.User) (*user_domain.TokenDetails, error) {
