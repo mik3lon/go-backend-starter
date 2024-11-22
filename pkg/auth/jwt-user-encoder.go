@@ -67,7 +67,7 @@ func (jue *JWTUserEncoder) GenerateToken(user *user_domain.User) (*user_domain.T
 	}
 
 	// Set token expiration times
-	accessTokenExpiration := time.Now().Add(15 * time.Minute).Unix()    // 15 minutes
+	accessTokenExpiration := time.Now().Add(2 * time.Hour).Unix()       // 15 minutes
 	refreshTokenExpiration := time.Now().Add(7 * 24 * time.Hour).Unix() // 7 days
 
 	// Create the access token

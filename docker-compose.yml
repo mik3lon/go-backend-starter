@@ -1,4 +1,16 @@
 services:
+  backend-localstack:
+    container_name: backend-localstack
+    hostname: backend-localstack
+    image: localstack/localstack:0.14.0
+    environment:
+      - SERVICES=sns,sqs,s3
+      - AWS_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=bar
+    ports:
+      - 4566:4566
+
   postgres:
     image: postgres:13
     container_name: starter-template-postgres

@@ -19,6 +19,16 @@ type User struct {
 	UpdatedAt         time.Time `gorm:"autoUpdateTime"`
 }
 
+func (u *User) UpdateProfile(username string, name string, surname string) {
+	u.Username = username
+	u.Name = name
+	u.Surname = surname
+}
+
+func (u *User) UpdateProfilePhoto(image string) {
+	u.ProfilePictureUrl = image
+}
+
 // CreateUser creates a new User entity.
 func CreateUser(id, username, email, password, name, surname, role, profilePictureUrl string) *User {
 	return &User{

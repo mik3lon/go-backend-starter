@@ -31,10 +31,13 @@ type UserModule struct {
 	UserPasswordSignInHandler *user_ui.UserPasswordSignInHandler
 	UserPasswordSignUpHandler *user_ui.UserPasswordSignUpHandler
 
-	IdTokenValidator user_domain.IdTokenValidator
-	GetUserMeHandler *user_ui.GetUserMeHandler
-	UserEncoder      user_domain.UserEncoder
-	AuthMiddleware   *middleware.AuthMiddleware
+	IdTokenValidator   user_domain.IdTokenValidator
+	GetUserMeHandler   *user_ui.GetUserMeHandler
+	UpdateUserProfile  *user_ui.UpdateUserProfile
+	UpdateProfilePhoto *user_ui.UpdateUserProfilePhoto
+
+	UserEncoder    user_domain.UserEncoder
+	AuthMiddleware *middleware.AuthMiddleware
 }
 
 func (m *UserModule) Name() string {
@@ -67,11 +70,15 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 		UserPasswordSignInHandler: user_ui.NewUserPasswordSignInHandler(k.QueryBus, k.JsonResponseWriter),
 		UserPasswordSignUpHandler: user_ui.NewUserPasswordSignUpHandler(k.CommandBus, k.JsonResponseWriter),
 		GetUserMeHandler:          user_ui.NewGetUserMeHandler(k.QueryBus, k.JsonResponseWriter),
+		UpdateUserProfile:         user_ui.NewUpdateUserProfile(k.CommandBus, k.JsonResponseWriter),
+		UpdateProfilePhoto:        user_ui.NewUpdateUserProfilePhoto(k.CommandBus, k.JsonResponseWriter),
 	}
 
 	pe := user_infrastructure.NewBcryptPasswordEncrypter()
 
 	um.AddCommand(&user_application.CreateUserCommand{}, user_application.NewCreateUserCommandHandler(r, pe))
+	um.AddCommand(&user_application.UpdateUserProfileCommand{}, user_application.NewUpdateUserProfileCommandHandler(r))
+	um.AddCommand(&user_application.UpdateUserProfilePhotoCommand{}, user_application.NewUpdateUserProfilePhotoCommandHandler(r, k.ImageUploader))
 
 	um.AddQuery(&user_application.GoogleSignInQuery{}, user_application.NewGoogleSignInQueryHandler(r, um.IdTokenValidator, ue, pe))
 	um.AddQuery(&user_application.FindUserQuery{}, user_application.NewFindUserQueryHandler(r))
@@ -100,15 +107,30 @@ func (m *UserModule) RegisterRoutes(c *Kernel) {
 		m.UserPasswordSignUpHandler.HandleUserPasswordSignUp,
 	)
 
-	c.Router.WithMiddleware().Handle(
+	c.Router.Handle(
 		http.MethodGet,
 		GetUserList,
 		m.GetUserList.HandleGetUserList,
 	)
 
-	c.Router.WithMiddleware(m.AuthMiddleware.Check).Handle(
+	c.Router.Handle(
 		http.MethodGet,
 		GetUserMe,
 		m.GetUserMeHandler.HandleGetUserMe,
+		m.AuthMiddleware.Check,
+	)
+
+	c.Router.Handle(
+		http.MethodPut,
+		"/users/me",
+		m.UpdateUserProfile.HandleUpdateUserProfile,
+		m.AuthMiddleware.Check,
+	)
+
+	c.Router.Handle(
+		http.MethodPut,
+		"/users/me/photo",
+		m.UpdateProfilePhoto.HandleUpdateProfilePhoto,
+		m.AuthMiddleware.Check,
 	)
 }

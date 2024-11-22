@@ -10,8 +10,7 @@ import (
 type Middleware func() gin.HandlerFunc
 
 type GinRouter struct {
-	engine     *gin.Engine
-	middleware []Middleware
+	engine *gin.Engine
 }
 
 type GoogleUserInfo struct {
@@ -33,10 +32,10 @@ func NewGinRouter() *GinRouter {
 	}
 }
 
-func (g *GinRouter) Handle(method, path string, handler gin.HandlerFunc) {
-	// Apply middleware to the handler
+func (g *GinRouter) Handle(method, path string, handler gin.HandlerFunc, middleware ...Middleware) {
+	// Wrap the handler with middleware
 	finalHandler := handler
-	for _, m := range g.middleware {
+	for _, m := range middleware {
 		finalHandler = wrapMiddleware(m, finalHandler)
 	}
 
@@ -53,11 +52,6 @@ func (g *GinRouter) Handle(method, path string, handler gin.HandlerFunc) {
 	default:
 		// Handle other HTTP methods if needed
 	}
-}
-
-func (g *GinRouter) WithMiddleware(middleware ...Middleware) *GinRouter {
-	g.middleware = append(g.middleware, middleware...)
-	return g
 }
 
 func (g *GinRouter) Serve(addr string) error {
