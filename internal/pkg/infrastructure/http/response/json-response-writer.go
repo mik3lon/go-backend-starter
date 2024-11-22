@@ -12,17 +12,12 @@ func NewJsonResponseWriter() *JsonResponseWriter {
 	return &JsonResponseWriter{}
 }
 
-func (jrw *JsonResponseWriter) WriteErrorResponse(w http.ResponseWriter, errors []error, httpStatus int, previousError error) {
+func (jrw *JsonResponseWriter) WriteErrorResponse(w http.ResponseWriter, err error, httpStatus int, previousError error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	errorMessages := make([]string, len(errors))
-	for i, err := range errors {
-		errorMessages[i] = err.Error()
-	}
-
 	response := map[string]interface{}{
-		"errors":        errorMessages,
+		"error":         err,
 		"previousError": previousError.Error(),
 	}
 

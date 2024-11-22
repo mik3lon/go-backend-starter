@@ -35,9 +35,7 @@ func (gss *GetUserMeHandler) HandleGetUserMe(g *gin.Context) {
 	case nil:
 		gss.jw.WriteResponse(g.Writer, userResponse, http.StatusOK)
 	case *user_domain.UserNotFound:
-		errs := make([]error, 0)
-		errs = append(errs, err)
-		gss.jw.WriteErrorResponse(g.Writer, errs, http.StatusNotFound, err)
+		gss.jw.WriteErrorResponse(g.Writer, err, http.StatusNotFound, err)
 	default:
 		fmt.Printf("error %v", err)
 		g.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

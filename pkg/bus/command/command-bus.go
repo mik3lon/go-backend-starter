@@ -2,9 +2,8 @@ package command
 
 import (
 	"context"
-	"errors"
 	"github.com/mik3lon/starter-template/pkg/bus"
-	"github.com/rs/zerolog"
+	shared_image_infrastructure "github.com/mik3lon/starter-template/pkg/infrastructure"
 	"reflect"
 	"sync"
 )
@@ -19,15 +18,15 @@ type Bus interface {
 type CommandBus struct {
 	handlers       map[string]CommandHandler
 	lock           sync.Mutex
-	l              zerolog.Logger
+	l              shared_image_infrastructure.Logger
 	failedCommands chan *FailedCommand
 }
 
-func InitCommandBus(logger zerolog.Logger) *CommandBus {
+func InitCommandBus(l shared_image_infrastructure.Logger) *CommandBus {
 	return &CommandBus{
 		handlers:       make(map[string]CommandHandler, 0),
 		lock:           sync.Mutex{},
-		l:              logger,
+		l:              l,
 		failedCommands: make(chan *FailedCommand),
 	}
 }
@@ -128,7 +127,7 @@ func (bus *CommandBus) doHandleAsync(ctx context.Context, handler CommandHandler
 			handler:        handler,
 			timesProcessed: 1,
 		}
-		bus.l.Error().Str("error_message", err.Error())
+		bus.l.Error(ctx, "error_message", map[string]interface{}{"error": err.Error()})
 	}
 }
 
@@ -149,7 +148,7 @@ func (bus *CommandBus) ProcessFailed(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			close(bus.failedCommands)
-			bus.l.Warn().Err(errors.New("exiting safely failed commands consumer"))
+			bus.l.Warn(ctx, "exiting safely failed commands consumer", map[string]interface{}{"error": ctx.Err().Error()})
 			return
 		case failedCommand := <-bus.failedCommands:
 			if failedCommand.timesProcessed >= 3 {
@@ -158,7 +157,7 @@ func (bus *CommandBus) ProcessFailed(ctx context.Context) {
 
 			failedCommand.timesProcessed++
 			if err := bus.doHandle(ctx, failedCommand.handler, failedCommand.command); err != nil {
-				bus.l.Warn().Str("error_message", err.Error())
+				bus.l.Warn(ctx, "failing processing command", map[string]interface{}{"error": ctx.Err().Error()})
 			}
 		}
 	}

@@ -3,7 +3,7 @@ package query
 import (
 	"context"
 	"github.com/mik3lon/starter-template/pkg/bus"
-	"github.com/rs/zerolog"
+	shared_image_infrastructure "github.com/mik3lon/starter-template/pkg/infrastructure"
 	"sync"
 )
 
@@ -15,14 +15,14 @@ type Bus interface {
 type QueryBus struct {
 	handlers map[string]QueryHandler
 	lock     sync.Mutex
-	logger   zerolog.Logger
+	logger   shared_image_infrastructure.Logger
 }
 
-func InitQueryBus(logger zerolog.Logger) *QueryBus {
+func InitQueryBus(l shared_image_infrastructure.Logger) *QueryBus {
 	return &QueryBus{
 		handlers: make(map[string]QueryHandler, 0),
 		lock:     sync.Mutex{},
-		logger:   logger,
+		logger:   l,
 	}
 }
 

@@ -1,5 +1,7 @@
 package file
 
+import "context"
+
 type ImageUploader interface {
-	Upload(f FileInfo) (*UploadFile, error)
+	Upload(ctx context.Context, f FileInfo) (*UploadFile, error)
 }

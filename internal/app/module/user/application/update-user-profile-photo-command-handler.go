@@ -37,7 +37,7 @@ func (uupch UpdateUserProfilePhotoCommandHandler) Handle(ctx context.Context, co
 		return err
 	}
 
-	upload, err := uupch.iu.Upload(*c.Image)
+	upload, err := uupch.iu.Upload(ctx, *c.Image)
 	if err != nil {
 		return err
 	}

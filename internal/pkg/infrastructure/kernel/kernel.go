@@ -14,9 +14,7 @@ import (
 	"github.com/mik3lon/starter-template/pkg/http/middleware"
 	shared_image_infrastructure "github.com/mik3lon/starter-template/pkg/infrastructure"
 	"github.com/mik3lon/starter-template/pkg/router"
-	"github.com/rs/zerolog"
 	"net/http"
-	"os"
 )
 
 type Kernel struct {
@@ -35,7 +33,7 @@ type Kernel struct {
 func Init(cnf *config.Config) *Kernel {
 	r := router.NewGinRouter()
 
-	l := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	l := shared_image_infrastructure.NewZerologAdapter()
 
 	k := &Kernel{
 		Router: r,
@@ -46,7 +44,7 @@ func Init(cnf *config.Config) *Kernel {
 		CommandBus:         command.InitCommandBus(l),
 		QueryBus:           query.InitQueryBus(l),
 		JsonResponseWriter: http_response.NewJsonResponseWriter(),
-		ImageUploader:      buildImageUploader(buildS3Client(cnf), cnf),
+		ImageUploader:      buildImageUploader(buildS3Client(cnf), cnf, l),
 	}
 
 	userModule := InitUserModule(k, cnf)
@@ -106,9 +104,9 @@ func buildS3Endpoint(cnf *config.Config) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com", cnf.S3ImageBucket, cnf.S3Region)
 }
 
-func buildImageUploader(client *s3.S3, cnf *config.Config) file.ImageUploader {
+func buildImageUploader(client *s3.S3, cnf *config.Config, l shared_image_infrastructure.Logger) file.ImageUploader {
 	s3Endpoint := buildS3Endpoint(cnf)
-	return shared_image_infrastructure.NewS3ImageUploader(client, cnf.S3ImageBucket, s3Endpoint)
+	return shared_image_infrastructure.NewS3ImageUploader(client, cnf.S3ImageBucket, s3Endpoint, l)
 }
 
 func buildS3Client(config *config.Config) *s3.S3 {
