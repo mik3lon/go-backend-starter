@@ -22,9 +22,6 @@ type UserModule struct {
 	BaseModule
 
 	UserSignInIndexHandler gin.HandlerFunc
-	UserDashboardHandler   *user_ui.UserDashboardHandler
-
-	GetUserList *user_ui.GetUserListHandler
 
 	UserRepository            user_domain.UserRepository
 	GoogleSocialSignInHandler *user_ui.GoogleSocialSignInHandler
@@ -63,8 +60,6 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 		UserEncoder:               ue,
 		AuthMiddleware:            middleware.NewAuthMiddleware(r, ue),
 		UserSignInIndexHandler:    user_ui.HandleUserSocialSignInIndex,
-		UserDashboardHandler:      user_ui.NewUserDashboardHandler(k.JsonResponseWriter),
-		GetUserList:               user_ui.NewGetUserListHandler(k.QueryBus, k.JsonResponseWriter),
 		GoogleSocialSignInHandler: user_ui.NewGoogleSocialSignInHandler(k.QueryBus, k.JsonResponseWriter),
 		IdTokenValidator:          user_infrastructure.NewGoogleIDTokenValidator(cnf.GoogleClientId),
 		UserPasswordSignInHandler: user_ui.NewUserPasswordSignInHandler(k.QueryBus, k.JsonResponseWriter),
@@ -82,7 +77,6 @@ func InitUserModule(k *Kernel, cnf *config.Config) *UserModule {
 
 	um.AddQuery(&user_application.GoogleSignInQuery{}, user_application.NewGoogleSignInQueryHandler(r, um.IdTokenValidator, ue, pe))
 	um.AddQuery(&user_application.FindUserQuery{}, user_application.NewFindUserQueryHandler(r))
-	um.AddQuery(&user_application.ListUsersQuery{}, user_application.NewListUsersQueryHandler(r))
 	um.AddQuery(&user_application.UserPasswordSignInQuery{}, user_application.NewUserPasswordSignInQueryHandler(r, ue, pe))
 
 	return um
@@ -105,12 +99,6 @@ func (m *UserModule) RegisterRoutes(c *Kernel) {
 		http.MethodPost,
 		"/users/auth/signup",
 		m.UserPasswordSignUpHandler.HandleUserPasswordSignUp,
-	)
-
-	c.Router.Handle(
-		http.MethodGet,
-		GetUserList,
-		m.GetUserList.HandleGetUserList,
 	)
 
 	c.Router.Handle(

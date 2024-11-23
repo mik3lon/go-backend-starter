@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang-jwt/jwt"
 	user_domain "github.com/mik3lon/starter-template/internal/app/module/user/domain"
+	"github.com/mik3lon/starter-template/pkg/file"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -56,6 +57,10 @@ func (m *MockUserEncoder) DecryptToken(tokenString string) (jwt.Claims, error) {
 
 func (m *MockUserEncoder) GenerateToken(user *user_domain.User) (*user_domain.TokenDetails, error) {
 	args := m.Called(user)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
 	return args.Get(0).(*user_domain.TokenDetails), args.Error(1)
 }
 
@@ -71,4 +76,16 @@ func (m *MockPasswordEncrypter) GenerateHashedPassword(isSocial bool, plainPassw
 func (m *MockPasswordEncrypter) VerifyPassword(hashedPassword, password string) error {
 	args := m.Called(hashedPassword, password)
 	return args.Error(0)
+}
+
+type MockImageUploader struct {
+	mock.Mock
+}
+
+func (m *MockImageUploader) Upload(ctx context.Context, f file.FileInfo) (*file.UploadFile, error) {
+	args := m.Called(ctx, f)
+	if uploadFile, ok := args.Get(0).(*file.UploadFile); ok {
+		return uploadFile, args.Error(1)
+	}
+	return nil, args.Error(1)
 }
